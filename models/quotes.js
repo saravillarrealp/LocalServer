@@ -110,10 +110,14 @@ db.exists(function (err, exists) {
 //config Rutes
 var router = express.Router();
 router.route('/models').get(function(req, res){
+	res.setHeader("Access-Control-Allow-Origin", "*");
+
   outputQuotes(res);
 });
 
 router.route('/models/:id').post(function(req, res){
+	res.setHeader("Access-Control-Allow-Origin", "*");
+
   var identificator = req.params.id;
   
   console.log('Id route: ', identificator);
