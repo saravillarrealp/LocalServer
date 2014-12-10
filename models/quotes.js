@@ -1,53 +1,16 @@
 //routes/reports.js
 var express = require('express');
 var cradle = require('cradle');
+
 var db = new (cradle.Connection)().database('tarea');
 
-var params = {author: process.argv[2], quote: process.argv[3]};
-
-function errorHandler(err) {
-  if (err) { console.log(err); process.exit(); }
-}
-
-
-function createQuotesView(err) {
-  console.log('Need to create view!');
-  errorHandler(err);
-  db.save('_design/quotes', {
-    views: {
-      byAuthor: {
-        map: 'function (doc) { emit(doc.author, doc) }'
-      }
-    }
-  }, outputQuotes);
-}
-
-/*function outputQuotes(err) {
-  errorHandler(err);
-
-  if (params.author) {
-    db.view('quotes/byAuthor', {key: params.author}, 
-    function (err, rowsArray) {
-      if (err && err.error === "not_found") {
-        createQuotesView();
-        return;
-      }
-      errorHandler(err);
-
-      rowsArray.forEach(function (doc) {
-        console.log('%s: %s \n', doc.author, doc.quote); return;
-      });
-    });
-  }
-}
-*/
-
+// Handlers
 function outputQuotes2(err) {
-  console.log("Necesitamos un milagro");
+	console.log("Necesitamos un milagro");
 }
 
-
-function outputQuotes(res) {
+// handler to get all tasks
+function getAllTasks(res) {
   var rows = [];
 	var self = this;
 	self.res = res;
@@ -70,59 +33,123 @@ function outputQuotes(res) {
   });
 }
 
-/*
-function Parametros(id, res) {
-  console.log('esto es la ruta/models/post/'+id);
-   res.json({ message: 'models/'+id});
-}
+// handler to create a task
+function createTask(req, res) {
+	var self = this;
+	self.res = res;
 
-function checkAndSave(err) {
-  errorHandler(err);
+  if (req.body.title) {
+    db.save({value: req.body.title}, function(err, res) {
+			if(err) {
+				return new Error("Error al tratar de crear tarea en base de datos");
+			}
 
-  if (params.author && params.quote) {
-    db.save({author: params.author, quote: params.quote}, outputQuotes);
-    return;
+			self.res.json({message: res});
+		});
   }
 
-  outputQuotes();
-}
-*/
-
-function Parametros2(id, res) {
- // errorHandler(err);
-
-  if (id) {
-    db.save({value: id}, outputQuotes2);
-    return;
-  }
-
-  console.log('Id parametros2: ', id);
+	return;
 }
 
-/*
-db.exists(function (err, exists) {
-  errorHandler(err);
-  if (!exists) { db.create(checkAndSave); }
-  checkAndSave();
-});
-*/
+// handler to get a task
+function getTask(params, res) {
+	console.log('params: ', params);
 
-//config Rutes
+	if(params.id) {
+		db.get(params.id, function(err, doc) {
+			if(err) {
+				return new Error("Error al tratar de obtener la tarea");
+			}
+
+			res.json({message: doc});
+		});
+	}
+}
+
+// handler to update a task
+function updateTask(req, res) {
+	var self = this;
+	self.res = res;
+
+	if (req.params.id) {
+		db.save(req.params.id, {value: req.body.title}, function(err, res) {
+			if(err) {
+				return new Error("Error al tratar de actualizar tarea en base de datos");
+			}
+
+			self.res.json({message: res});
+		});
+	}
+
+	return;
+}
+
+// handler to delete a task
+function deleteTask(params, res) {
+	var self = this;
+	self.res = res;
+
+	if (params.id) {
+		db.remove(params.id, function(err, res) {
+			if(err) {
+				return new Error("Error al tratar de eliminar tarea en base de datos");
+			}
+
+			self.res.json({message: res});
+		});
+	}
+
+	return;
+}
+
+//config Routes
 var router = express.Router();
-router.route('/models').get(function(req, res){
-	res.setHeader("Access-Control-Allow-Origin", "*");
 
-  outputQuotes(res);
+// Get all tasks
+router.route('/tasks').get(function(req, res){
+	res.header("Access-Control-Allow-Origin", "*");
+	res.header("Access-Control-Allow-Headers", "X-Requested-With, Origin, X-Titanium-Id, Content-Type, Accept");
+	res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
+
+//  outputQuotes(res);
+	getAllTasks(res);
 });
 
-router.route('/models/:id').post(function(req, res){
-	res.setHeader("Access-Control-Allow-Origin", "*");
+// Create a single task
+router.route('/tasks').post(function(req, res){
+	res.header("Access-Control-Allow-Origin", "*");
+	res.header("Access-Control-Allow-Headers", "X-Requested-With, Origin, X-Titanium-Id, Content-Type, Accept");
+	res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
 
-  var identificator = req.params.id;
-  
-  console.log('Id route: ', identificator);
-  
-  Parametros2(identificator, res);
+	createTask(req, res);
 });
+
+// Get a single task by id
+router.route('/tasks/:id').get(function(req, res){
+	res.header("Access-Control-Allow-Origin", "*");
+	res.header("Access-Control-Allow-Headers", "X-Requested-With, Origin, X-Titanium-Id, Content-Type, Accept");
+	res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
+
+	getTask(req.params, res);
+});
+
+// Update a task by id
+router.route('/tasks/:id').put(function(req, res){
+	res.header("Access-Control-Allow-Origin", "*");
+	res.header("Access-Control-Allow-Headers", "X-Requested-With, Origin, X-Titanium-Id, Content-Type, Accept");
+	res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
+
+	updateTask(req, res);
+});
+
+// Delete a task by id
+router.route('/tasks/:id').delete(function(req, res){
+	res.header("Access-Control-Allow-Origin", "*");
+	res.header("Access-Control-Allow-Headers", "X-Requested-With, Origin, X-Titanium-Id, Content-Type, Accept");
+	res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
+
+	deleteTask(req.params, res);
+});
+
 
 module.exports = router;
